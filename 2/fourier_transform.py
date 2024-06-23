@@ -11,7 +11,8 @@ def fourier_transform(img):
 
     return f, amplitude, phase
 
-def plot_fourier_transform(title, amplitude, phase):
+def plot_fourier_transform(title, amplitude, phase, fig_num):
+    plt.figure(fig_num, figsize=(15, 5))
     plt.subplot(131), plt.imshow(amplitude, cmap='gray')
     plt.title(title + ' Amplitude Spectrum'), plt.xticks([]), plt.yticks([])
 
@@ -21,7 +22,6 @@ def plot_fourier_transform(title, amplitude, phase):
 
     plt.subplot(133), plt.imshow(phase, cmap='gray')
     plt.title(title + ' Phase Spectrum'), plt.xticks([]), plt.yticks([])
-    plt.show()
 
 
 
@@ -36,10 +36,23 @@ def main():
     f_n, amplitude_n, phase_n = fourier_transform(img_n)
 
     # plot the Fourier Transform of the images
-    plot_fourier_transform('I.jpg - Original Image', amplitude, phase)
-    plot_fourier_transform('I_n.jpg - Noisy Image', amplitude_n, phase_n)
+    plot_fourier_transform('I.jpg - Original Image', amplitude, phase, 1)
+    plot_fourier_transform('I_n.jpg - Noisy Image', amplitude_n, phase_n, 2)
 
+    # b) Compute the amplitude difference between the Fourier Transform of the images plot
+    # compute amplitude difference
+    amplitude_diff = np.abs(amplitude - amplitude_n)
 
+    # plot amplitude difference
+    plt.figure(3, figsize=(10, 5))
+    plt.subplot(121), plt.imshow(amplitude_diff, cmap='gray')
+    plt.title('Amplitude Difference'), plt.xticks([]), plt.yticks([])
+
+    # log scale
+    plt.subplot(122), plt.imshow(np.log(1 + amplitude), cmap='gray')
+    plt.title('Log Amplitude Spectrum'), plt.xticks([]), plt.yticks([])
+
+    plt.show()
 
 
 if __name__ == '__main__':
