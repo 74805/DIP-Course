@@ -52,6 +52,27 @@ def main():
     plt.subplot(122), plt.imshow(np.log(1 + amplitude), cmap='gray')
     plt.title('Log Amplitude Spectrum'), plt.xticks([]), plt.yticks([])
 
+    # c) Compute the Fourier Transform of the images chita.jpeg and zebra.jpeg and plot the amplitude and phase spectrum of them respectively
+    # open chita.jpeg and zebra.jpeg
+    img_chita = cv2.imread('../images/chita.jpeg', cv2.IMREAD_GRAYSCALE)
+    img_zebra = cv2.imread('../images/zebra.jpeg', cv2.IMREAD_GRAYSCALE)
+
+    # compute the Fourier Transform of the images
+    f_chita, amplitude_chita, phase_chita = fourier_transform(img_chita)
+    f_zebra, amplitude_zebra, phase_zebra = fourier_transform(img_zebra)
+
+    # plot the amplitude of chita.jpeg
+    plt.figure(4, figsize=(15, 5))
+    plt.subplot(121), plt.imshow(amplitude_chita, cmap='gray')
+    plt.title('chita.jpeg - Amplitude Spectrum'), plt.xticks([]), plt.yticks([])
+    plt.subplot(122), plt.imshow(np.log(1 + amplitude_chita), cmap='gray')
+    plt.title('chita.jpeg - Log Amplitude Spectrum'), plt.xticks([]), plt.yticks([])
+
+    # plot the phase of zebra.jpeg
+    plt.figure(5, figsize=(15, 5))
+    plt.subplot(111), plt.imshow(phase_zebra, cmap='gray')
+    plt.title('zebra.jpeg - Phase Spectrum'), plt.xticks([]), plt.yticks([])
+
     plt.show()
 
 
