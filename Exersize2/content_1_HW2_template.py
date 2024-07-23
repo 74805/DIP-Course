@@ -32,11 +32,8 @@ def calculate_matches(image1, image2):
 
     return good_matches, keypoints1, keypoints2
 
-
 def dlt(matrix1, matrix2):
-
     A = np.zeros((8, 9))
-
     # each two coordinates gives two equations that comes from the homography relation.
     # it comes from the analytic solution:
     # -x*h1 - y*h2 - 1*h3 - 0*h4 - 0*h5 - 0*h6 + xu*h7 + yu*h8 + u*h9 = 0
@@ -67,46 +64,35 @@ def dlt(matrix1, matrix2):
 # step (v): After N trials select the largest consensus set Si, re-estimate the model using all the points in the subset Si.
 def RANSAC(coordinates1, coordinates2, threshold, max_iterations=1000):
     best_homography = None
-    largest_consensus_set = []
-
-    T = len(coordinates1) // 2  # threshold for inlier set size
+    max_inliers = 0
 
     for _ in range(max_iterations):
-        # Step i
-        indices = np.random.choice(len(coordinates1), 4, replace=False)
-        sample1 = coordinates1[indices]
-        sample2 = coordinates2[indices]
+        # randomly select 4 points
+        idx = np.random.choice(len(coordinates1), 4, replace=False)
+        pts1 = coordinates1[idx]
+        pts2 = coordinates2[idx]
 
-        # calculate homography from this point set
-        H = dlt(sample1, sample2)
+        # compute the homography using DLT
+        homography = dlt(pts1, pts2)
 
-        # Step ii
-        transformed_coords = cv2.perspectiveTransform(coordinates1.reshape(-1, 1, 2), H)
-        distances = np.linalg.norm(transformed_coords.reshape(-1, 2) - coordinates2, axis=1)
-        inliers = np.where(distances < threshold)[0]
+        # apply the homography to all points
+        coordinates1_homogeneous = np.column_stack((coordinates1, np.ones(coordinates1.shape[0])))
+        coordinates2_projected = (homography @ coordinates1_homogeneous.T).T
+        coordinates2_projected /= coordinates2_projected[:, 2][:, np.newaxis]
 
-        # Step iii and iv
-        if len(inliers) > T:
-            # re-estimate the model using all points in Si
-            inlier_points1 = coordinates1[inliers]
-            inlier_points2 = coordinates2[inliers]
-            H_refined = dlt(inlier_points1, inlier_points2)
-            return H_refined, len(inliers)  # end the RANSAC if the condition has met
+        # calculate the distance between the projected points and the actual points
+        distances = np.linalg.norm(coordinates2 - coordinates2_projected[:, :2], axis=1)
 
-        # if the current inliers set has more inliers update the homography
-        if len(inliers) > len(largest_consensus_set):
-            largest_consensus_set = inliers
-            best_homography = H
+        # determine the number of inliers
+        inliers = distances < threshold
+        num_inliers = np.sum(inliers)
 
-    # Step v - at the end of the loop return the homography (if you found one set at least)
-    if len(largest_consensus_set) > 0:
-        final_points1 = coordinates1[largest_consensus_set]
-        final_points2 = coordinates2[largest_consensus_set]
-        final_homography = dlt(final_points1, final_points2)
-        return final_homography, len(largest_consensus_set)
+        # update the best homography if the current one has more inliers
+        if num_inliers > max_inliers:
+            max_inliers = num_inliers
+            best_homography = homography
 
-    return best_homography, len(largest_consensus_set)
-
+    return best_homography, max_inliers
 
 def stitch_images(image1, image2, homography):
     # Get images height and width , turn them to 1X2 vectors
@@ -154,9 +140,8 @@ def stitch_images(image1, image2, homography):
     cv2.imwrite('panoramic_image.jpg', blended)
 
 # Main
-
 # Make sure you use the right path
-image1= 'Hanging1.png'
+image1 = 'Hanging1.png'
 image2 = 'Hanging2.png'
 
 # Calculate good matches between the images and obtain keypoints
@@ -167,7 +152,7 @@ coordinates1 = np.float32([keypoints1[match.queryIdx].pt for match in matches])
 coordinates2 = np.float32([keypoints2[match.trainIdx].pt for match in matches])
 
 # RANSAC to find the best homography
-homography, inliers = RANSAC(coordinates1, coordinates2, threshold=1000)
+homography, inliers = RANSAC(coordinates1, coordinates2, threshold=5)
 
 # Stitch the images together
 stitch_images(image1, image2, homography)
